@@ -183,8 +183,22 @@ class zabbixtraps
                 ));
         $a->setItem("blog.plugins.discovery",ZabbixArgumentedItem::create(
             function ($args){
-                return "";
+                if(!function_exists("get_plugins"))
+                    require_once ABSPATH . 'wp-admin/includes/plugin.php';
+                $data=get_plugins();
+                $trapper=ZabbixDiscoveryTrap::create();
+                foreach ($data as $key => $value) {
+                    $trapper->addItem(array("{#PLUGIN}"=>$key));
+                }
+                return $trapper->toValue();
             }//,array('/var/www/wordpress/')
+                ));
+        $a->setItem("blog.plugins.info",ZabbixArgumentedItem::create(
+            function ($args){
+                if(!function_exists("get_plugins"))
+                    require_once ABSPATH . 'wp-admin/includes/plugin.php';
+                return get_plugins()[$args[0]][$args[1]];
+            },array('','Name')
                 ));
     }
 
