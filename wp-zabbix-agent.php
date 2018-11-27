@@ -130,6 +130,62 @@ class zabbixtraps
 //        $a->setItem("blog.pingback_url", ZabbixPrimitiveItem::create(get_bloginfo("pingback_url")));
 //        $a->setItem("blog.pingback_url", ZabbixPrimitiveItem::create(get_bloginfo("pingback_url")));
 
+        $getFileHash=function($args){return dechex(crc32(file_get_contents($args[0])));};
+        $a->setItem("vfs.files.crc32",ZabbixArgumentedItem::create($getFileHash));
+        $a->setItem("vfs.files.discovery",ZabbixArgumentedItem::create(
+            function ($args){
+                $trapper=ZabbixDiscoveryTrap::create();
+                //$trapper->addItem(array(1));
+                $path=$args[0];
+                function getDirContents($dir, &$results = array()){
+                    $files = scandir($dir);
+                    $ignoreRegex=
+                        '/\.git|\.idea|(^.+\.(png|jpg|jpeg|gif|mp3|mp4)$)|(^uploads$)|(^cache$)'
+                        .'|(\.css$)'
+                        .'|(\.scss$)'
+                        .'|(\.svg$)'
+                        .'|(\.js$)'
+                        .'|(\.html$)'
+                        .'|(\.md$)'
+                        .'|(\.json$)'
+                        .'|(\.txt$)'
+                        .'|(\.mo$)'
+                        .'|(\.po$)'
+                        .'|(\.gz$)'
+                        .'|(\.tar$)'
+                        .'|(\.conf$)'
+                        .'|(\.ini$)'
+                        .'/i';
+                    $whitelistRegex='/^.+\.php/i';
+                    foreach($files as $key => $value){
+                        $path = realpath($dir.DIRECTORY_SEPARATOR.$value);
+                        if(!is_dir($path)) {
+                            if(preg_match($whitelistRegex,$value))
+                                $results[] = $path;
+                        } else if($value != "." && $value != "..") {
+                            if(!preg_match($ignoreRegex,$value))
+                                getDirContents($path, $results);
+                            //$results[] = $path;
+                        }
+                    }
+
+                    return $results;
+                }
+                $tree=getDirContents($path);
+                $count=0;
+                foreach ($tree as $value)
+                {
+                    if($count++>100)break;//TODO remove. Added during debugging (weak zabbix-server host)
+                    $trapper->addItem(array("{#PATH}"=>$value));
+                }
+                return $trapper->toValue();
+            },array('/var/www/wordpress/')
+                ));
+        $a->setItem("blog.plugins.discovery",ZabbixArgumentedItem::create(
+            function ($args){
+                return "";
+            }//,array('/var/www/wordpress/')
+                ));
     }
 
     /**
@@ -140,11 +196,13 @@ class zabbixtraps
     {
         $agent=null;
         try{
-            $agent=ZabbixAgent::create(10351);
+            $agent=ZabbixAgent::create();
             $agent -> setupActive($s['hostname'],
                 $s['port'],
                 $s['local_hostname'],
-                $s['metadata']);
+                $s['metadata'],
+                120,
+                10);
             //$agent->setDebugLevel();
         }
         catch(Exception $e){
