@@ -2,3 +2,4 @@
 vendor
 composer.lock
 inc/php-zabbix-agent/*
+inc/php-zabbix-agent
