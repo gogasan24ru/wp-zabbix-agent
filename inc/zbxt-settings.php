@@ -150,7 +150,7 @@ if(!isset($serverSettings)||(!$serverSettings))
             'hostname'=>'127.0.0.1',
             'port'=>10051,
             'metadata'=>get_bloginfo('name'),
-            'local_hostname'=>get_bloginfo('name')
+            'local_hostname'=>str_replace(array('http://','https://'),'',get_bloginfo('url'))
     );
 }
 ?>
@@ -189,7 +189,7 @@ if(!isset($serverSettings)||(!$serverSettings))
             <tr>
                 <td>Local zabbix agent hostname</td>
                 <td><input name="generalSettings[local_hostname]" type="text" value="<?php echo $serverSettings['local_hostname']; ?>"> </td>
-                <td>shop.example.com for example or <font><?php echo get_bloginfo('name');?></font></td>
+                <td><?php echo str_replace(array('http://','https://'),'',get_bloginfo('url'));?> for example</td>
             </tr>
         </tbody>
     </table>

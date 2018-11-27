@@ -12,9 +12,16 @@ License: A "Slug" license name e.g. GPL2
 //global $wp_object_cache;
 //var_dump($wp_object_cache);
 //die();
-foreach (glob(__DIR__."/inc/php-zabbix-agent/*.php") as $filename) {
+foreach (glob(__DIR__."/inc/php-zabbix-agent/src/*.php") as $filename) {
     include $filename;
 }
+
+if(function_exists('xdebug_disable'))
+{
+    xdebug_disable();
+}
+
+
 class zabbixtraps
 {
 
@@ -85,18 +92,12 @@ class zabbixtraps
      */
     private function setupKeys(ZabbixAgent $a,$settings)
     {
-        //Zabbix agent specific keys:
-        $a->setItem("agent.ping", ZabbixPrimitiveItem::create("1"));
-        $a->setItem("agent.hostname", ZabbixPrimitiveItem::create($settings['local_hostname']));
-        $a->setItem("agent.version", ZabbixPrimitiveItem::create("PHP-zabbix-agent-0.0.1"));
-
         //get_bloginfo
         //some wordpress keys:
         $a->setItem("blog.name", ZabbixPrimitiveItem::create(get_bloginfo("name")));
         $a->setItem("blog.description", ZabbixPrimitiveItem::create(get_bloginfo("description")));
         $a->setItem("blog.wpurl", ZabbixPrimitiveItem::create(get_bloginfo("wpurl")));
         $a->setItem("blog.url", ZabbixPrimitiveItem::create(get_bloginfo("url")));
-        $a->setItem("blog.url_", ZabbixPrimitiveItem::create(get_bloginfo("url")));
         $a->setItem("blog.admin_email", ZabbixPrimitiveItem::create(get_bloginfo("admin_email")));
         $a->setItem("blog.charset", ZabbixPrimitiveItem::create(get_bloginfo("charset")));
         $a->setItem("blog.version", ZabbixPrimitiveItem::create(get_bloginfo("version")));
@@ -177,11 +178,13 @@ class zabbixtraps
                     $a->sendActiveChecksResults();
                     if($optionsStored)
                     {
-                        update_option('ZBXT_activeConfiguration',json_encode($a->getServerActiveConfiguration()));
+                        update_option('ZBXT_activeConfiguration',
+                            json_encode($a->getServerActiveConfiguration()));
                     }
                     else
                     {
-                        add_option("ZBXT_activeConfiguration",json_encode($a->getServerActiveConfiguration()));
+                        add_option("ZBXT_activeConfiguration",
+                            json_encode($a->getServerActiveConfiguration()));
                     }
                 } catch (Exception $e)
                 {
